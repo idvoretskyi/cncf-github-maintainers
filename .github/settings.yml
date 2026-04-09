@@ -1,0 +1,61 @@
+# Repository settings managed by the GitHub Settings app
+# https://github.com/apps/settings
+# Apply by installing the Settings app on the repo and pushing this file to the default branch.
+
+repository:
+  name: cncf-github-maintainers
+  description: "CLI tool to validate GitHub usernames against the CNCF project maintainers list and add them to the cncf-maintainers GitHub org team"
+  homepage: https://github.com/idvoretskyi/cncf-github-maintainers
+  topics: cncf, github, maintainers, cli, golang, cloud-native
+  private: false
+  has_issues: true
+  has_projects: false
+  has_wiki: false
+  has_downloads: true
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: true
+  allow_auto_merge: false
+  delete_branch_on_merge: true
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+labels:
+  - name: bug
+    color: "d73a4a"
+    description: Something isn't working
+  - name: enhancement
+    color: "a2eeef"
+    description: New feature or request
+  - name: documentation
+    color: "0075ca"
+    description: Improvements or additions to documentation
+  - name: security
+    color: "e4e669"
+    description: Security-related issue or fix
+  - name: dependencies
+    color: "0366d6"
+    description: Pull requests that update a dependency file
+  - name: good first issue
+    color: "7057ff"
+    description: Good for newcomers
+  - name: help wanted
+    color: "008672"
+    description: Extra attention is needed
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: false
+      required_status_checks:
+        strict: true
+        contexts:
+          - ci / build
+          - Analyze (go)
+      enforce_admins: false
+      required_linear_history: true
+      restrictions: null
