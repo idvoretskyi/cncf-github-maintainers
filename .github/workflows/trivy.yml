@@ -20,17 +20,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6.4.0
         with:
           go-version-file: go.mod
           cache: true
 
       # ── Filesystem / dependency scan ────────────────────────────────────────
       - name: Run Trivy (filesystem – SARIF)
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -40,7 +40,7 @@ jobs:
           exit-code: "0"   # don't fail the job; let the SARIF upload surface results
 
       - name: Upload Trivy filesystem SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4.35.1
         if: always()
         with:
           sarif_file: trivy-fs.sarif
@@ -48,7 +48,7 @@ jobs:
 
       # ── Table output for easy PR reading ────────────────────────────────────
       - name: Run Trivy (filesystem – table)
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           scan-type: fs
           scan-ref: .

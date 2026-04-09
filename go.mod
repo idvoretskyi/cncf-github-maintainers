@@ -1,6 +1,6 @@
 module github.com/idvoretskyi/cncf-github-maintainers
 
-go 1.26.2
+go 1.25.0
 
 require (
 	github.com/google/go-github/v62 v62.0.0
