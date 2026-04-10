@@ -34,9 +34,12 @@ var addCmd = &cobra.Command{
 GitHub username(s), and adds confirmed maintainers to the
 cncf-maintainers/cncf-maintainers team on GitHub.
 
-Authentication:
-  Requires the GITHUB_TOKEN environment variable to be set to a PAT
-  with 'admin:org' scope (unless --dry-run is used).
+Authentication (checked in order):
+  1. GITHUB_TOKEN environment variable
+  2. GH_TOKEN environment variable
+  3. gh auth token (local GitHub CLI config)
+
+The token must have 'admin:org' scope (unless --dry-run is used).
 
 Examples:
   # Single user

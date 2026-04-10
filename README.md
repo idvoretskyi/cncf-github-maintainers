@@ -1,8 +1,5 @@
 # cncf-github-maintainers
 
-[![ci](https://github.com/idvoretskyi/cncf-github-maintainers/actions/workflows/ci.yml/badge.svg)](https://github.com/idvoretskyi/cncf-github-maintainers/actions/workflows/ci.yml)
-[![codeql](https://github.com/idvoretskyi/cncf-github-maintainers/actions/workflows/codeql.yml/badge.svg)](https://github.com/idvoretskyi/cncf-github-maintainers/actions/workflows/codeql.yml)
-[![trivy](https://github.com/idvoretskyi/cncf-github-maintainers/actions/workflows/trivy.yml/badge.svg)](https://github.com/idvoretskyi/cncf-github-maintainers/actions/workflows/trivy.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 A CLI tool that validates GitHub usernames against the
@@ -22,7 +19,29 @@ and adds confirmed maintainers to the
 ## Prerequisites
 
 - Go 1.26+
-- A GitHub Personal Access Token with `admin:org` scope (required for the `add` command)
+- A GitHub token with `admin:org` scope (required for the `add` command)
+
+### Authentication
+
+The tool looks for a GitHub token using the following fallback chain:
+
+| Priority | Source | Notes |
+|----------|--------|-------|
+| 1 | `GITHUB_TOKEN` env var | Traditional / CI-friendly approach |
+| 2 | `GH_TOKEN` env var | Also respected by the GitHub CLI |
+| 3 | `gh auth token` | Reads the token from your local GitHub CLI config |
+
+The easiest way to authenticate locally is to use the [GitHub CLI](https://cli.github.com/):
+
+```bash
+# Log in (first time) — include the admin:org scope for the "add" command
+gh auth login -s admin:org
+
+# If you already have gh installed and logged in, add the scope:
+gh auth refresh -s admin:org
+```
+
+The `validate` command does not require a token.
 
 ## Installation
 
@@ -60,7 +79,8 @@ Example output:
 ### Add a maintainer to the team
 
 ```bash
-# Set your token
+# If using gh CLI auth, no extra setup is needed.
+# Otherwise, set your token explicitly:
 export GITHUB_TOKEN=ghp_...
 
 # Single user
@@ -107,19 +127,10 @@ username3
 │   ├── validate.go              # "validate" subcommand
 │   └── add.go                   # "add" subcommand with --dry-run
 └── internal/
-    ├── config/config.go         # Constants, GITHUB_TOKEN reader
+    ├── config/config.go         # Constants, token resolution (env / gh CLI)
     ├── csv/maintainers.go       # CSV fetch, parse, lookup
     └── github/team.go           # GitHub team membership API
 ```
-
-## CI/CD & Security
-
-| Workflow | Trigger | Purpose |
-|---|---|---|
-| **CI** | Push / PR to `main` | Build, vet, test (Go 1.26) |
-| **CodeQL** | Push / PR / weekly | Static analysis (security + quality) |
-| **Trivy** | Push / PR / weekly | Dependency vulnerability scanning |
-| **Dependabot** | Weekly | Automated Go module and Actions updates |
 
 ## License
 
