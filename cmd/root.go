@@ -25,6 +25,13 @@ Authentication:
   with the 'admin:org' scope before running the 'add' command.`,
 }
 
+// SetVersion injects build-time version information into the root command so
+// that `cncf-maintainers --version` prints meaningful output. It is called
+// from main.go with variables populated by GoReleaser ldflags.
+func SetVersion(version, commit, date string) {
+	rootCmd.Version = fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date)
+}
+
 // Execute is the entry point called from main.go.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
