@@ -1,0 +1,65 @@
+version: 2
+
+project_name: cncf-maintainers
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod verify
+
+builds:
+  - id: cncf-maintainers
+    binary: cncf-maintainers
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - LICENSE
+      - README.md
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^chore(deps)"
+      - "^chore(actions)"
+      - "^Merge pull request"
+      - "^Merge branch"
+  groups:
+    - title: "New Features"
+      regexp: "^feat"
+      order: 0
+    - title: "Bug Fixes"
+      regexp: "^fix"
+      order: 1
+    - title: "Other Changes"
+      order: 999
+
+release:
+  github:
+    owner: idvoretskyi
+    name: cncf-github-maintainers
+  draft: false
+  prerelease: auto
+  name_template: "v{{ .Version }}"
