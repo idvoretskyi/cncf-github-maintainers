@@ -1,98 +1,40 @@
 # cncf-github-maintainers
 
+[![Release](https://img.shields.io/github/v/release/idvoretskyi/cncf-github-maintainers)](https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
-A CLI tool that validates GitHub usernames against the
-[CNCF project maintainers list](https://github.com/cncf/foundation/blob/main/project-maintainers.csv)
-and adds confirmed maintainers to the
-[cncf-maintainers](https://github.com/orgs/cncf-maintainers/teams/cncf-maintainers) GitHub team.
+A CLI tool to validate GitHub usernames against the [CNCF project maintainers list](https://github.com/cncf/foundation/blob/main/project-maintainers.csv) and add confirmed maintainers to the [cncf-maintainers](https://github.com/orgs/cncf-maintainers/teams/cncf-maintainers) GitHub team.
 
-## Features
-
-- **Validate** -- check whether a GitHub username is an active CNCF project maintainer
-- **Add** -- validate and then add the user to the `cncf-maintainers/cncf-maintainers` team
-- **Bulk mode** -- process a file of usernames (one per line)
-- **Dry-run** -- preview what `add` would do without making changes
-- Multi-project detection (shows all projects a person maintains)
-- Case-insensitive username matching
-
-## Prerequisites
-
-- Go 1.26+
-- A GitHub token with `admin:org` scope (required for the `add` command)
-
-### Authentication
-
-The tool looks for a GitHub token using the following fallback chain:
-
-| Priority | Source | Notes |
-|----------|--------|-------|
-| 1 | `GITHUB_TOKEN` env var | Traditional / CI-friendly approach |
-| 2 | `GH_TOKEN` env var | Also respected by the GitHub CLI |
-| 3 | `gh auth token` | Reads the token from your local GitHub CLI config |
-
-The easiest way to authenticate locally is to use the [GitHub CLI](https://cli.github.com/):
+## Quick Start
 
 ```bash
-# Log in (first time) — include the admin:org scope for the "add" command
-gh auth login -s admin:org
+# Install
+curl -sSL https://raw.githubusercontent.com/idvoretskyi/cncf-github-maintainers/main/install.sh | sh
 
-# If you already have gh installed and logged in, add the scope:
-gh auth refresh -s admin:org
+# Validate a username
+cncf-maintainers validate octocat
+
+# Add a confirmed maintainer to the team
+cncf-maintainers add octocat
 ```
-
-The `validate` command does not require a token.
 
 ## Installation
 
-### macOS and Linux (pre-built binary) — recommended
-
-Download the latest pre-built binary from the
-[Releases page](https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest).
-
-**macOS (Apple Silicon / arm64):**
+**One-liner (macOS and Linux, recommended):**
 
 ```bash
-curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_darwin_arm64.tar.gz \
-  | tar xz
-sudo mv cncf-maintainers /usr/local/bin/
+curl -sSL https://raw.githubusercontent.com/idvoretskyi/cncf-github-maintainers/main/install.sh | sh
 ```
 
-**macOS (Intel / amd64):**
+Auto-detects your OS and architecture and installs the binary to `/usr/local/bin`.
 
-```bash
-curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_darwin_amd64.tar.gz \
-  | tar xz
-sudo mv cncf-maintainers /usr/local/bin/
-```
-
-**Linux (amd64):**
-
-```bash
-curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_linux_amd64.tar.gz \
-  | tar xz
-sudo mv cncf-maintainers /usr/local/bin/
-```
-
-**Linux (arm64):**
-
-```bash
-curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_linux_arm64.tar.gz \
-  | tar xz
-sudo mv cncf-maintainers /usr/local/bin/
-```
-
-Each release also includes a `checksums.txt` file for verifying the integrity of the downloaded archives.
-
-### Go install
-
-If you have Go 1.26+ installed:
+**Go install:**
 
 ```bash
 go install github.com/idvoretskyi/cncf-github-maintainers@latest
 ```
 
-### Build from source
+**Build from source:**
 
 ```bash
 git clone https://github.com/idvoretskyi/cncf-github-maintainers.git
@@ -100,82 +42,45 @@ cd cncf-github-maintainers
 go build -o cncf-maintainers .
 ```
 
+## Authentication
+
+A GitHub token with `admin:org` scope is required for the `add` command. The tool resolves it in this order:
+
+| Priority | Source |
+|----------|--------|
+| 1 | `GITHUB_TOKEN` env var |
+| 2 | `GH_TOKEN` env var |
+| 3 | `gh auth token` (GitHub CLI) |
+
+The quickest way to authenticate:
+
+```bash
+gh auth login -s admin:org
+```
+
+The `validate` command does not require a token.
+
 ## Usage
 
-### Validate a username
-
 ```bash
-# Single user
-cncf-maintainers validate --username <github-username>
+# Validate a single user
+cncf-maintainers validate <username>
 
-# Bulk from file
+# Validate multiple users or from a file
+cncf-maintainers validate <user1> <user2>
 cncf-maintainers validate --file usernames.txt
-```
 
-Example output:
+# Add a confirmed maintainer to the team
+cncf-maintainers add <username>
 
-```
-[✓] <github-username> -- confirmed CNCF maintainer
-    Name:    Jane Doe
-    Company: Example Corp
-    Project: projectname (graduated)
-```
+# Preview without making changes
+cncf-maintainers add <username> --dry-run
 
-### Add a maintainer to the team
-
-```bash
-# If using gh CLI auth, no extra setup is needed.
-# Otherwise, set your token explicitly:
-export GITHUB_TOKEN=ghp_...
-
-# Single user
-cncf-maintainers add --username <github-username>
-
-# Dry-run (validate only, no changes)
-cncf-maintainers add --username <github-username> --dry-run
-
-# Bulk from file
+# Bulk add from a file
 cncf-maintainers add --file usernames.txt
-
-# Bulk dry-run
-cncf-maintainers add --file usernames.txt --dry-run
 ```
 
-### Input file format
-
-One GitHub username per line. Blank lines and lines starting with `#` are ignored.
-Duplicates are automatically deduplicated.
-
-```
-# Project A maintainers
-username1
-username2
-
-# Project B maintainers
-username3
-```
-
-## How it works
-
-1. Fetches [`project-maintainers.csv`](https://github.com/cncf/foundation/blob/main/project-maintainers.csv) from the `cncf/foundation` repository
-2. Parses the CSV (handling the carry-forward pattern for Level and Project columns)
-3. Matches the input username(s) against the `Github Name` column (case-insensitive)
-4. For the `add` command: calls the GitHub API to add validated users to the `cncf-maintainers/cncf-maintainers` team
-
-## Project structure
-
-```
-.
-├── main.go                      # Entry point
-├── cmd/
-│   ├── root.go                  # Root command, shared helpers
-│   ├── validate.go              # "validate" subcommand
-│   └── add.go                   # "add" subcommand with --dry-run
-└── internal/
-    ├── config/config.go         # Constants, token resolution (env / gh CLI)
-    ├── csv/maintainers.go       # CSV fetch, parse, lookup
-    └── github/team.go           # GitHub team membership API
-```
+Input files accept one username per line. Lines starting with `#` and blank lines are ignored. Duplicates are deduplicated automatically.
 
 ## License
 
