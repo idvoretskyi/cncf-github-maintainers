@@ -24,13 +24,13 @@ For file-based bulk operations use --file.
 
 Examples:
   # Single user
-  cncf-maintainers validate dims
+  cncf-maintainers validate johnsmith
 
   # Multiple users as separate arguments
-  cncf-maintainers validate dims johnsmith janedoe
+  cncf-maintainers validate johnsmith janedoe janesmith
 
   # Multiple users as a copy-pasted comma/space-separated list
-  cncf-maintainers validate "dims, johnsmith, janedoe"
+  cncf-maintainers validate "johnsmith, janedoe, janesmith"
 
   # Bulk from file (one username per line)
   cncf-maintainers validate --file usernames.txt`,

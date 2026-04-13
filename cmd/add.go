@@ -51,16 +51,16 @@ The token must have 'admin:org' scope (unless --dry-run is used).
 
 Examples:
   # Single user (interactive confirmation)
-  cncf-maintainers add dims
+  cncf-maintainers add johnsmith
 
   # Multiple users as separate arguments
-  cncf-maintainers add dims johnsmith janedoe
+  cncf-maintainers add johnsmith janedoe janesmith
 
   # Multiple users as a copy-pasted comma/space-separated list
-  cncf-maintainers add "dims, johnsmith, janedoe"
+  cncf-maintainers add "johnsmith, janedoe, janesmith"
 
   # Dry-run: validate but do not add
-  cncf-maintainers add dims --dry-run
+  cncf-maintainers add johnsmith --dry-run
 
   # Bulk from file (no confirmation prompt)
   cncf-maintainers add --file usernames.txt
