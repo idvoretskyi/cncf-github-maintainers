@@ -1,5 +1,5 @@
 # Compiled binary
-cncf-maintainers
+/cncf-maintainers
 
 # Go build artifacts
 *.test
@@ -13,6 +13,9 @@ cncf-maintainers
 .vscode/
 *.swp
 *.swo
+
+# AI assistant config
+.claude/
 
 # Environment files – never commit tokens
 .env

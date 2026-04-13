@@ -13,18 +13,14 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ["1.26"]
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v6.0.2
 
-      - name: Set up Go ${{ matrix.go-version }}
+      - name: Set up Go
         uses: actions/setup-go@v6.4.0
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version-file: go.mod
           cache: true
 
       - name: Download dependencies

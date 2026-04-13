@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -59,13 +60,14 @@ func (c *Client) AddToTeam(ctx context.Context, org, teamSlug, username string) 
 // unwrapGitHubError extracts the human-readable message from a *github.ErrorResponse
 // when available, otherwise returns the original error.
 func unwrapGitHubError(err error) error {
-	if ghErr, ok := err.(*github.ErrorResponse); ok {
+	var ghErr *github.ErrorResponse
+	if errors.As(err, &ghErr) {
 		if ghErr.Message != "" {
 			// Include rate-limit information when relevant.
 			if ghErr.Response != nil && ghErr.Response.StatusCode == http.StatusForbidden {
 				return fmt.Errorf("%s (HTTP 403 – check token scopes and org permissions)", ghErr.Message)
 			}
-			return fmt.Errorf("%s", ghErr.Message)
+			return errors.New(ghErr.Message)
 		}
 	}
 	return err
