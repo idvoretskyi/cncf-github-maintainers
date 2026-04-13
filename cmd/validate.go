@@ -13,20 +13,28 @@ import (
 var validateFile string
 
 var validateCmd = &cobra.Command{
-	Use:   "validate [username]",
-	Short: "Check whether a GitHub username is a CNCF project maintainer",
+	Use:   "validate [username...]",
+	Short: "Check whether GitHub username(s) are CNCF project maintainers",
 	Long: `Fetches the CNCF project-maintainers.csv and checks whether the
-supplied GitHub username appears in the "Github Name" column.
+supplied GitHub username(s) appear in the "Github Name" column.
 
-For bulk operations use --file to supply one username per line.
+Multiple usernames can be passed as separate arguments or as a single
+quoted string with names separated by spaces, commas, or newlines.
+For file-based bulk operations use --file.
 
 Examples:
   # Single user
   cncf-maintainers validate dims
 
+  # Multiple users as separate arguments
+  cncf-maintainers validate dims johnsmith janedoe
+
+  # Multiple users as a copy-pasted comma/space-separated list
+  cncf-maintainers validate "dims, johnsmith, janedoe"
+
   # Bulk from file (one username per line)
   cncf-maintainers validate --file usernames.txt`,
-	Args: cobra.MaximumNArgs(1),
+	Args: cobra.ArbitraryArgs,
 	RunE: runValidate,
 }
 

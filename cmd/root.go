@@ -33,28 +33,66 @@ func Execute() {
 }
 
 // readUsernames returns a deduplicated, non-empty list of GitHub usernames
-// from either a positional argument or a file specified by --file.
+// from positional arguments and/or a file specified by --file.
+// Each positional argument may itself contain multiple usernames separated
+// by commas, spaces, or newlines (so copy-pasted lists work directly).
 // args should be the positional arguments passed to the cobra command.
 func readUsernames(args []string, file string) ([]string, error) {
-	hasPositional := len(args) > 0 && strings.TrimSpace(args[0]) != ""
+	var positional []string
+	for _, arg := range args {
+		positional = append(positional, splitUsernames(arg)...)
+	}
+	hasPositional := len(positional) > 0
 
 	switch {
 	case hasPositional && file != "":
-		return nil, fmt.Errorf("use either a positional username argument or --file, not both")
+		return nil, fmt.Errorf("use either positional username arguments or --file, not both")
 
 	case hasPositional:
-		return []string{strings.TrimSpace(args[0])}, nil
+		return dedup(positional), nil
 
 	case file != "":
 		return readUsernamesFromFile(file)
 
 	default:
-		return nil, fmt.Errorf("a GitHub username argument or --file is required")
+		return nil, fmt.Errorf("one or more GitHub usernames or --file is required")
 	}
+}
+
+// splitUsernames splits a single string on commas, spaces, and newlines,
+// returning non-empty tokens. This allows copy-pasted lists to be passed
+// as a single quoted argument or as multiple shell words.
+func splitUsernames(s string) []string {
+	// Normalise commas to spaces, then split on whitespace.
+	s = strings.ReplaceAll(s, ",", " ")
+	var tokens []string
+	for _, t := range strings.Fields(s) {
+		t = strings.TrimSpace(t)
+		if t != "" {
+			tokens = append(tokens, t)
+		}
+	}
+	return tokens
+}
+
+// dedup returns a case-insensitively deduplicated copy of names,
+// preserving the original casing of the first occurrence.
+func dedup(names []string) []string {
+	seen := make(map[string]bool, len(names))
+	out := make([]string, 0, len(names))
+	for _, n := range names {
+		lower := strings.ToLower(n)
+		if !seen[lower] {
+			seen[lower] = true
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // readUsernamesFromFile reads one GitHub username per line from path.
 // Blank lines and lines starting with '#' are ignored.
+// Each line may also contain comma/space-separated usernames.
 func readUsernamesFromFile(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -62,24 +100,19 @@ func readUsernamesFromFile(path string) ([]string, error) {
 	}
 	defer f.Close()
 
-	seen := make(map[string]bool)
 	var names []string
-
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		lower := strings.ToLower(line)
-		if !seen[lower] {
-			seen[lower] = true
-			names = append(names, line)
-		}
+		names = append(names, splitUsernames(line)...)
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("reading file %q: %w", path, err)
 	}
+	names = dedup(names)
 	if len(names) == 0 {
 		return nil, fmt.Errorf("file %q contains no usernames", path)
 	}

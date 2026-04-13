@@ -30,14 +30,17 @@ type addResult struct {
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add [username]",
-	Short: "Validate a CNCF maintainer and add them to the cncf-maintainers team",
+	Use:   "add [username...]",
+	Short: "Validate CNCF maintainer(s) and add them to the cncf-maintainers team",
 	Long: `Fetches the CNCF project-maintainers.csv, validates the supplied
-GitHub username, and — after showing their details and asking for
+GitHub username(s), and — after showing their details and asking for
 confirmation — adds confirmed maintainers to the
 cncf-maintainers/cncf-maintainers team on GitHub.
 
-For bulk operations use --file; confirmation is skipped in that mode.
+Multiple usernames can be passed as separate arguments or as a single
+quoted string with names separated by spaces, commas, or newlines.
+For file-based bulk operations use --file. The confirmation prompt is
+only shown when a single username is resolved; bulk runs are automatic.
 
 Authentication (checked in order):
   1. GITHUB_TOKEN environment variable
@@ -50,6 +53,12 @@ Examples:
   # Single user (interactive confirmation)
   cncf-maintainers add dims
 
+  # Multiple users as separate arguments
+  cncf-maintainers add dims johnsmith janedoe
+
+  # Multiple users as a copy-pasted comma/space-separated list
+  cncf-maintainers add "dims, johnsmith, janedoe"
+
   # Dry-run: validate but do not add
   cncf-maintainers add dims --dry-run
 
@@ -58,7 +67,7 @@ Examples:
 
   # Bulk dry-run
   cncf-maintainers add --file usernames.txt --dry-run`,
-	Args: cobra.MaximumNArgs(1),
+	Args: cobra.ArbitraryArgs,
 	RunE: runAdd,
 }
 
@@ -85,7 +94,7 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	// Single-user flow: interactive with confirmation prompt.
-	// Bulk flow (--file): non-interactive, no prompt.
+	// Bulk flow (multiple usernames or --file): non-interactive, no prompt.
 	interactive := len(usernames) == 1 && addFile == ""
 
 	fmt.Fprintf(cmd.OutOrStdout(), "Fetching CNCF maintainers list...\n\n")
