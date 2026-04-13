@@ -10,34 +10,33 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	validateUsername string
-	validateFile     string
-)
+var validateFile string
 
 var validateCmd = &cobra.Command{
-	Use:   "validate",
-	Short: "Check whether GitHub username(s) are CNCF project maintainers",
+	Use:   "validate [username]",
+	Short: "Check whether a GitHub username is a CNCF project maintainer",
 	Long: `Fetches the CNCF project-maintainers.csv and checks whether the
-supplied GitHub username(s) appear in the "Github Name" column.
+supplied GitHub username appears in the "Github Name" column.
+
+For bulk operations use --file to supply one username per line.
 
 Examples:
   # Single user
-  cncf-maintainers validate --username dims
+  cncf-maintainers validate dims
 
   # Bulk from file (one username per line)
   cncf-maintainers validate --file usernames.txt`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runValidate,
 }
 
 func init() {
 	rootCmd.AddCommand(validateCmd)
-	validateCmd.Flags().StringVarP(&validateUsername, "username", "u", "", "GitHub username to validate")
 	validateCmd.Flags().StringVarP(&validateFile, "file", "f", "", "Path to a file with one GitHub username per line")
 }
 
-func runValidate(cmd *cobra.Command, _ []string) error {
-	usernames, err := readUsernames(validateUsername, validateFile)
+func runValidate(cmd *cobra.Command, args []string) error {
+	usernames, err := readUsernames(args, validateFile)
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func runValidate(cmd *cobra.Command, _ []string) error {
 			continue
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s — confirmed CNCF maintainer\n", username)
+		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s — confirmed CNCF project maintainer\n", username)
 		for _, m := range matches {
 			fmt.Fprintf(cmd.OutOrStdout(), "    Name:    %s\n", m.Name)
 			if m.Company != "" {

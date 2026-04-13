@@ -33,20 +33,23 @@ func Execute() {
 }
 
 // readUsernames returns a deduplicated, non-empty list of GitHub usernames
-// from either the --username flag or a file specified by --file.
-func readUsernames(username, file string) ([]string, error) {
-	switch {
-	case username != "" && file != "":
-		return nil, fmt.Errorf("use either --username or --file, not both")
+// from either a positional argument or a file specified by --file.
+// args should be the positional arguments passed to the cobra command.
+func readUsernames(args []string, file string) ([]string, error) {
+	hasPositional := len(args) > 0 && strings.TrimSpace(args[0]) != ""
 
-	case username != "":
-		return []string{strings.TrimSpace(username)}, nil
+	switch {
+	case hasPositional && file != "":
+		return nil, fmt.Errorf("use either a positional username argument or --file, not both")
+
+	case hasPositional:
+		return []string{strings.TrimSpace(args[0])}, nil
 
 	case file != "":
 		return readUsernamesFromFile(file)
 
 	default:
-		return nil, fmt.Errorf("one of --username or --file is required")
+		return nil, fmt.Errorf("a GitHub username argument or --file is required")
 	}
 }
 
