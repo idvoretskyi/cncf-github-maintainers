@@ -10,34 +10,41 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	validateUsername string
-	validateFile     string
-)
+var validateFile string
 
 var validateCmd = &cobra.Command{
-	Use:   "validate",
+	Use:   "validate [username...]",
 	Short: "Check whether GitHub username(s) are CNCF project maintainers",
 	Long: `Fetches the CNCF project-maintainers.csv and checks whether the
 supplied GitHub username(s) appear in the "Github Name" column.
 
+Multiple usernames can be passed as separate arguments or as a single
+quoted string with names separated by spaces, commas, or newlines.
+For file-based bulk operations use --file.
+
 Examples:
   # Single user
-  cncf-maintainers validate --username dims
+  cncf-maintainers validate johnsmith
+
+  # Multiple users as separate arguments
+  cncf-maintainers validate johnsmith janedoe janesmith
+
+  # Multiple users as a copy-pasted comma/space-separated list
+  cncf-maintainers validate "johnsmith, janedoe, janesmith"
 
   # Bulk from file (one username per line)
   cncf-maintainers validate --file usernames.txt`,
+	Args: cobra.ArbitraryArgs,
 	RunE: runValidate,
 }
 
 func init() {
 	rootCmd.AddCommand(validateCmd)
-	validateCmd.Flags().StringVarP(&validateUsername, "username", "u", "", "GitHub username to validate")
 	validateCmd.Flags().StringVarP(&validateFile, "file", "f", "", "Path to a file with one GitHub username per line")
 }
 
-func runValidate(cmd *cobra.Command, _ []string) error {
-	usernames, err := readUsernames(validateUsername, validateFile)
+func runValidate(cmd *cobra.Command, args []string) error {
+	usernames, err := readUsernames(args, validateFile)
 	if err != nil {
 		return err
 	}
@@ -59,7 +66,7 @@ func runValidate(cmd *cobra.Command, _ []string) error {
 			continue
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s — confirmed CNCF maintainer\n", username)
+		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s — confirmed CNCF project maintainer\n", username)
 		for _, m := range matches {
 			fmt.Fprintf(cmd.OutOrStdout(), "    Name:    %s\n", m.Name)
 			if m.Company != "" {
