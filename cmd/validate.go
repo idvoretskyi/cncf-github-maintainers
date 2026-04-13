@@ -12,8 +12,9 @@ import (
 var validateFile string
 
 var validateCmd = &cobra.Command{
-	Use:   "validate [username...]",
-	Short: "Check whether GitHub username(s) are CNCF project maintainers",
+	Use:          "validate [username...]",
+	SilenceUsage: true,
+	Short:        "Check whether GitHub username(s) are CNCF project maintainers",
 	Long: `Fetches the CNCF project-maintainers.csv and checks whether the
 supplied GitHub username(s) appear in the "Github Name" column.
 

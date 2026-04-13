@@ -30,8 +30,9 @@ type addResult struct {
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add [username...]",
-	Short: "Validate CNCF maintainer(s) and add them to the cncf-maintainers team",
+	Use:          "add [username...]",
+	SilenceUsage: true,
+	Short:        "Validate CNCF maintainer(s) and add them to the cncf-maintainers team",
 	Long: `Fetches the CNCF project-maintainers.csv, validates the supplied
 GitHub username(s), and — after showing their details and asking for
 confirmation — adds confirmed maintainers to the
