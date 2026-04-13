@@ -2,9 +2,8 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/idvoretskyi/cncf-github-maintainers/internal/csv"
 	"github.com/spf13/cobra"
@@ -58,6 +57,7 @@ func runValidate(cmd *cobra.Command, args []string) error {
 	}
 
 	allFound := true
+	found := 0
 	for _, username := range usernames {
 		matches := csv.FindByGitHubName(maintainers, username)
 		if len(matches) == 0 {
@@ -66,31 +66,19 @@ func runValidate(cmd *cobra.Command, args []string) error {
 			continue
 		}
 
+		found++
 		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s — confirmed CNCF project maintainer\n", username)
 		for _, m := range matches {
-			fmt.Fprintf(cmd.OutOrStdout(), "    Name:    %s\n", m.Name)
-			if m.Company != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "    Company: %s\n", m.Company)
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "    Project: %s (%s)\n", m.Project, strings.ToLower(m.Level))
-			if m.OwnersLink != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "    OWNERS:  %s\n", m.OwnersLink)
-			}
+			printMaintainerDetails(cmd.OutOrStdout(), m, true)
 		}
 	}
 
 	if len(usernames) > 1 {
-		found := 0
-		for _, u := range usernames {
-			if len(csv.FindByGitHubName(maintainers, u)) > 0 {
-				found++
-			}
-		}
 		fmt.Fprintf(cmd.OutOrStdout(), "\nSummary: %d/%d username(s) are active CNCF maintainers\n", found, len(usernames))
 	}
 
 	if !allFound {
-		os.Exit(1)
+		return errors.New("one or more usernames were not found in the CNCF maintainers list")
 	}
 	return nil
 }

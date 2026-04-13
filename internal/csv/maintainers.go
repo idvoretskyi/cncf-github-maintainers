@@ -3,6 +3,7 @@ package csv
 import (
 	"context"
 	"encoding/csv"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -73,7 +74,7 @@ func parseCSV(r io.Reader) ([]Maintainer, error) {
 
 	for {
 		record, err := reader.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -108,7 +109,7 @@ func parseCSV(r io.Reader) ([]Maintainer, error) {
 			continue
 		}
 
-		ownersLink := ""
+		var ownersLink string
 		if len(record) > config.ColOwnersLink {
 			ownersLink = strings.TrimSpace(record[config.ColOwnersLink])
 		}

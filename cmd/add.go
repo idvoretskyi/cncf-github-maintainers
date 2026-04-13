@@ -110,76 +110,10 @@ func runAdd(cmd *cobra.Command, args []string) error {
 	}
 
 	results := make([]addResult, 0, len(usernames))
-
 	for _, username := range usernames {
-		res := addResult{username: username}
-
-		// Step 1: check whether this person is an active CNCF project maintainer.
-		if interactive {
-			fmt.Fprintf(cmd.OutOrStdout(), "Checking if %s is an active CNCF project maintainer...\n\n", username)
-		}
-
-		matches := csv.FindByGitHubName(maintainers, username)
-		if len(matches) == 0 {
-			fmt.Fprintf(cmd.OutOrStdout(), "[✗] %s — NOT found in the CNCF maintainers list, skipping\n", username)
-			results = append(results, res)
-			continue
-		}
-
-		res.found = true
-		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s is a confirmed CNCF project maintainer:\n", username)
-		for _, m := range matches {
-			fmt.Fprintf(cmd.OutOrStdout(), "    Name:    %s\n", m.Name)
-			if m.Company != "" {
-				fmt.Fprintf(cmd.OutOrStdout(), "    Company: %s\n", m.Company)
-			}
-			fmt.Fprintf(cmd.OutOrStdout(), "    Project: %s (%s)\n", m.Project, strings.ToLower(m.Level))
-		}
-		fmt.Fprintln(cmd.OutOrStdout())
-
-		if addDryRun {
-			fmt.Fprintf(cmd.OutOrStdout(), "    [!] Would add to %s/%s (dry-run)\n", config.OrgName, config.TeamSlug)
-			res.dryRun = true
-			results = append(results, res)
-			continue
-		}
-
-		// Step 2: for single-user interactive mode, ask for confirmation before adding.
-		if interactive {
-			confirmed, err := promptConfirm(cmd, fmt.Sprintf("Add %s to the %s/%s GitHub team? [Y/n]: ", username, config.OrgName, config.TeamSlug))
-			if err != nil {
-				return err
-			}
-			if !confirmed {
-				fmt.Fprintf(cmd.OutOrStdout(), "Skipped.\n")
-				res.skipped = true
-				results = append(results, res)
-				continue
-			}
-		}
-
-		// Check current membership.
-		isMember, err := client.IsTeamMember(ctx, config.OrgName, config.TeamSlug, username)
+		res, err := processUsername(ctx, cmd, client, username, maintainers, interactive, addDryRun)
 		if err != nil {
-			res.err = err
-			fmt.Fprintf(cmd.OutOrStdout(), "    [!] Error checking membership: %v\n", err)
-			results = append(results, res)
-			continue
-		}
-		if isMember {
-			fmt.Fprintf(cmd.OutOrStdout(), "[~] %s is already an active member of %s/%s\n", username, config.OrgName, config.TeamSlug)
-			res.alreadyMem = true
-			results = append(results, res)
-			continue
-		}
-
-		// Add to team.
-		if err := client.AddToTeam(ctx, config.OrgName, config.TeamSlug, username); err != nil {
-			res.err = err
-			fmt.Fprintf(cmd.OutOrStdout(), "[!] Failed to add %s: %v\n", username, err)
-		} else {
-			fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s added to %s/%s\n", username, config.OrgName, config.TeamSlug)
-			res.added = true
+			return err
 		}
 		results = append(results, res)
 	}
@@ -196,6 +130,71 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		}
 	}
 	return nil
+}
+
+// processUsername validates and optionally adds a single username to the team.
+// A non-nil error signals that the entire run should be aborted (e.g. a failed
+// confirmation read); per-user API errors are recorded in addResult.err instead.
+func processUsername(ctx context.Context, cmd *cobra.Command, client *gh.Client,
+	username string, maintainers []csv.Maintainer, interactive, dryRun bool) (addResult, error) {
+
+	res := addResult{username: username}
+
+	if interactive {
+		fmt.Fprintf(cmd.OutOrStdout(), "Checking if %s is an active CNCF project maintainer...\n\n", username)
+	}
+
+	matches := csv.FindByGitHubName(maintainers, username)
+	if len(matches) == 0 {
+		fmt.Fprintf(cmd.OutOrStdout(), "[✗] %s — NOT found in the CNCF maintainers list, skipping\n", username)
+		return res, nil
+	}
+
+	res.found = true
+	fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s is a confirmed CNCF project maintainer:\n", username)
+	for _, m := range matches {
+		printMaintainerDetails(cmd.OutOrStdout(), m, false)
+	}
+	fmt.Fprintln(cmd.OutOrStdout())
+
+	if dryRun {
+		fmt.Fprintf(cmd.OutOrStdout(), "    [!] Would add to %s/%s (dry-run)\n", config.OrgName, config.TeamSlug)
+		res.dryRun = true
+		return res, nil
+	}
+
+	if interactive {
+		confirmed, err := promptConfirm(cmd, fmt.Sprintf("Add %s to the %s/%s GitHub team? [Y/n]: ", username, config.OrgName, config.TeamSlug))
+		if err != nil {
+			return res, err
+		}
+		if !confirmed {
+			fmt.Fprintf(cmd.OutOrStdout(), "Skipped.\n")
+			res.skipped = true
+			return res, nil
+		}
+	}
+
+	isMember, err := client.IsTeamMember(ctx, config.OrgName, config.TeamSlug, username)
+	if err != nil {
+		res.err = err
+		fmt.Fprintf(cmd.OutOrStdout(), "    [!] Error checking membership: %v\n", err)
+		return res, nil
+	}
+	if isMember {
+		fmt.Fprintf(cmd.OutOrStdout(), "[~] %s is already an active member of %s/%s\n", username, config.OrgName, config.TeamSlug)
+		res.alreadyMem = true
+		return res, nil
+	}
+
+	if err := client.AddToTeam(ctx, config.OrgName, config.TeamSlug, username); err != nil {
+		res.err = err
+		fmt.Fprintf(cmd.OutOrStdout(), "[!] Failed to add %s: %v\n", username, err)
+	} else {
+		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s added to %s/%s\n", username, config.OrgName, config.TeamSlug)
+		res.added = true
+	}
+	return res, nil
 }
 
 // promptConfirm writes prompt to cmd's stdout and reads a line from stdin.
