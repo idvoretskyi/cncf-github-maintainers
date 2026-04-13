@@ -45,14 +45,59 @@ The `validate` command does not require a token.
 
 ## Installation
 
+### macOS and Linux (pre-built binary) — recommended
+
+Download the latest pre-built binary from the
+[Releases page](https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest).
+
+**macOS (Apple Silicon / arm64):**
+
 ```bash
-# Clone and build
+curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_darwin_arm64.tar.gz \
+  | tar xz
+sudo mv cncf-maintainers /usr/local/bin/
+```
+
+**macOS (Intel / amd64):**
+
+```bash
+curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_darwin_amd64.tar.gz \
+  | tar xz
+sudo mv cncf-maintainers /usr/local/bin/
+```
+
+**Linux (amd64):**
+
+```bash
+curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_linux_amd64.tar.gz \
+  | tar xz
+sudo mv cncf-maintainers /usr/local/bin/
+```
+
+**Linux (arm64):**
+
+```bash
+curl -L https://github.com/idvoretskyi/cncf-github-maintainers/releases/latest/download/cncf-maintainers_linux_arm64.tar.gz \
+  | tar xz
+sudo mv cncf-maintainers /usr/local/bin/
+```
+
+Each release also includes a `checksums.txt` file for verifying the integrity of the downloaded archives.
+
+### Go install
+
+If you have Go 1.26+ installed:
+
+```bash
+go install github.com/idvoretskyi/cncf-github-maintainers@latest
+```
+
+### Build from source
+
+```bash
 git clone https://github.com/idvoretskyi/cncf-github-maintainers.git
 cd cncf-github-maintainers
 go build -o cncf-maintainers .
-
-# Or install directly
-go install github.com/idvoretskyi/cncf-github-maintainers@latest
 ```
 
 ## Usage
