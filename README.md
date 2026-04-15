@@ -52,6 +52,7 @@ go install github.com/idvoretskyi/cncf-github-maintainers@latest
 ```bash
 git clone https://github.com/idvoretskyi/cncf-github-maintainers.git
 cd cncf-github-maintainers
+git checkout v0.1.0
 go build -o cncf-maintainers .
 ```
 
