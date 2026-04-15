@@ -8,8 +8,8 @@ A CLI tool to validate GitHub usernames against the [CNCF project maintainers li
 ## Quick Start
 
 ```bash
-# Install
-curl -sSL https://raw.githubusercontent.com/idvoretskyi/cncf-github-maintainers/main/install.sh | sh
+# Install (macOS and Linux)
+brew install idvoretskyi/tap/cncf-maintainers
 
 # Validate a username
 cncf-maintainers validate octocat
@@ -20,7 +20,20 @@ cncf-maintainers add octocat
 
 ## Installation
 
-**One-liner (macOS and Linux, recommended):**
+**Homebrew (macOS and Linux, recommended):**
+
+```bash
+brew install idvoretskyi/tap/cncf-maintainers
+```
+
+Or tap first, then install:
+
+```bash
+brew tap idvoretskyi/tap
+brew install cncf-maintainers
+```
+
+**One-liner (macOS and Linux):**
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/idvoretskyi/cncf-github-maintainers/main/install.sh | sh
