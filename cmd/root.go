@@ -3,11 +3,9 @@ package cmd
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
-	"github.com/idvoretskyi/cncf-github-maintainers/internal/csv"
 	"github.com/spf13/cobra"
 )
 
@@ -38,19 +36,6 @@ func SetVersion(version, commit, date string) {
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
-	}
-}
-
-// printMaintainerDetails writes the Name, Company, Project, and optionally
-// OWNERS link for a single Maintainer entry to w.
-func printMaintainerDetails(w io.Writer, m csv.Maintainer, includeOwners bool) {
-	fmt.Fprintf(w, "    Name:    %s\n", m.Name)
-	if m.Company != "" {
-		fmt.Fprintf(w, "    Company: %s\n", m.Company)
-	}
-	fmt.Fprintf(w, "    Project: %s (%s)\n", m.Project, strings.ToLower(m.Level))
-	if includeOwners && m.OwnersLink != "" {
-		fmt.Fprintf(w, "    OWNERS:  %s\n", m.OwnersLink)
 	}
 }
 

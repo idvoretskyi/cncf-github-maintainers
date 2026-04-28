@@ -13,17 +13,6 @@ const (
 
 	// TeamSlug is the team within OrgName where maintainers are added.
 	TeamSlug = "cncf-maintainers"
-
-	// MaintainersCSVURL is the raw URL of the CNCF project-maintainers.csv file.
-	MaintainersCSVURL = "https://raw.githubusercontent.com/cncf/foundation/main/project-maintainers.csv"
-
-	// CSV column indices (0-based).
-	ColLevel      = 0
-	ColProject    = 1
-	ColName       = 2
-	ColCompany    = 3
-	ColGitHubName = 4
-	ColOwnersLink = 5
 )
 
 // GetGitHubToken returns a GitHub personal access token using the following
