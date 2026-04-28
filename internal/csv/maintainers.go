@@ -8,8 +8,19 @@ import (
 	"io"
 	"net/http"
 	"strings"
+)
 
-	"github.com/idvoretskyi/cncf-github-maintainers/internal/config"
+const (
+	// maintainersCSVURL is the raw URL of the CNCF project-maintainers.csv file.
+	maintainersCSVURL = "https://raw.githubusercontent.com/cncf/foundation/main/project-maintainers.csv"
+
+	// CSV column indices (0-based).
+	colLevel      = 0
+	colProject    = 1
+	colName       = 2
+	colCompany    = 3
+	colGitHubName = 4
+	colOwnersLink = 5
 )
 
 // Maintainer represents a single row from the CNCF project-maintainers.csv.
@@ -39,7 +50,7 @@ func FetchMaintainers(ctx context.Context) ([]Maintainer, error) {
 }
 
 func fetchAndParse(ctx context.Context) ([]Maintainer, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.MaintainersCSVURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, maintainersCSVURL, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -92,33 +103,33 @@ func parseCSV(r io.Reader) ([]Maintainer, error) {
 		}
 
 		// Ensure we have at least the GitHubName column.
-		if len(record) <= config.ColGitHubName {
+		if len(record) <= colGitHubName {
 			continue
 		}
 
 		// Carry forward Level and Project when the columns are blank.
-		if lv := strings.TrimSpace(record[config.ColLevel]); lv != "" {
+		if lv := strings.TrimSpace(record[colLevel]); lv != "" {
 			currentLevel = lv
 		}
-		if proj := strings.TrimSpace(record[config.ColProject]); proj != "" {
+		if proj := strings.TrimSpace(record[colProject]); proj != "" {
 			currentProj = proj
 		}
 
-		ghName := strings.TrimSpace(record[config.ColGitHubName])
+		ghName := strings.TrimSpace(record[colGitHubName])
 		if ghName == "" {
 			continue
 		}
 
 		var ownersLink string
-		if len(record) > config.ColOwnersLink {
-			ownersLink = strings.TrimSpace(record[config.ColOwnersLink])
+		if len(record) > colOwnersLink {
+			ownersLink = strings.TrimSpace(record[colOwnersLink])
 		}
 
 		maintainers = append(maintainers, Maintainer{
 			Level:      currentLevel,
 			Project:    currentProj,
-			Name:       strings.TrimSpace(record[config.ColName]),
-			Company:    strings.TrimSpace(record[config.ColCompany]),
+			Name:       strings.TrimSpace(record[colName]),
+			Company:    strings.TrimSpace(record[colCompany]),
 			GitHubName: ghName,
 			OwnersLink: ownersLink,
 		})
@@ -129,6 +140,21 @@ func parseCSV(r io.Reader) ([]Maintainer, error) {
 	}
 
 	return maintainers, nil
+}
+
+// Details returns a formatted multi-line string describing the maintainer.
+// When includeOwners is true and an OWNERS link is present, it is included.
+func (m Maintainer) Details(includeOwners bool) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "    Name:    %s\n", m.Name)
+	if m.Company != "" {
+		fmt.Fprintf(&b, "    Company: %s\n", m.Company)
+	}
+	fmt.Fprintf(&b, "    Project: %s (%s)\n", m.Project, strings.ToLower(m.Level))
+	if includeOwners && m.OwnersLink != "" {
+		fmt.Fprintf(&b, "    OWNERS:  %s\n", m.OwnersLink)
+	}
+	return b.String()
 }
 
 // FindByGitHubName returns all Maintainer entries whose GitHubName matches

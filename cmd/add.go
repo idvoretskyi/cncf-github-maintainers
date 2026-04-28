@@ -154,7 +154,7 @@ func processUsername(ctx context.Context, cmd *cobra.Command, client *gh.Client,
 	res.found = true
 	fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s is a confirmed CNCF project maintainer:\n", username)
 	for _, m := range matches {
-		printMaintainerDetails(cmd.OutOrStdout(), m, false)
+		fmt.Fprint(cmd.OutOrStdout(), m.Details(false))
 	}
 	fmt.Fprintln(cmd.OutOrStdout())
 

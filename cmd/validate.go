@@ -70,7 +70,7 @@ func runValidate(cmd *cobra.Command, args []string) error {
 		found++
 		fmt.Fprintf(cmd.OutOrStdout(), "[✓] %s — confirmed CNCF project maintainer\n", username)
 		for _, m := range matches {
-			printMaintainerDetails(cmd.OutOrStdout(), m, true)
+			fmt.Fprint(cmd.OutOrStdout(), m.Details(true))
 		}
 	}
 
