@@ -63,3 +63,46 @@ release:
   draft: false
   prerelease: auto
   name_template: "v{{ .Version }}"
+
+# ── Future: auto-PR formula updates to homebrew-tap ──────────────────────────
+# GoReleaser can open a PR to idvoretskyi/homebrew-tap automatically on every
+# release, eliminating the need to manually bump the formula.
+#
+# To enable:
+#   1. Create a fine-grained PAT for your GitHub account scoped to the
+#      idvoretskyi/homebrew-tap repository with the following permissions:
+#        - Contents: Read and write
+#        - Pull requests: Read and write
+#   2. Save the PAT as the HOMEBREW_TAP_TOKEN secret in THIS repository
+#      (idvoretskyi/cncf-github-maintainers → Settings → Secrets → Actions).
+#   3. In .github/workflows/release.yml, pass the token to the GoReleaser step:
+#        - name: Run GoReleaser
+#          uses: goreleaser/goreleaser-action@...
+#          with:
+#            args: release --clean
+#          env:
+#            GITHUB_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+#      Note: the default GITHUB_TOKEN only has write access to the current repo.
+#   4. Uncomment the 'brews:' block below and open a PR. The next 'git tag …
+#      && git push origin <tag>' will automatically open a bump-PR in the tap.
+#
+# brews:
+#   - name: cncf-maintainers
+#     repository:
+#       owner: idvoretskyi
+#       name: homebrew-tap
+#       branch: "bump/cncf-maintainers-{{ .Version }}"
+#       pull_request:
+#         enabled: true
+#         base:
+#           owner: idvoretskyi
+#           name: homebrew-tap
+#           branch: main
+#     directory: Formula
+#     homepage: "https://github.com/idvoretskyi/cncf-github-maintainers"
+#     description: "CLI to validate GitHub usernames against the CNCF maintainers list"
+#     license: "Apache-2.0"
+#     test: |
+#       assert_match version.to_s, shell_output("#{bin}/cncf-maintainers --version")
+#     install: |
+#       bin.install "cncf-maintainers"
