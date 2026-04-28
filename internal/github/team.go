@@ -37,6 +37,66 @@ func (c *Client) IsTeamMember(ctx context.Context, org, teamSlug, username strin
 	return membership.GetState() == "active", nil
 }
 
+// TeamMember represents a single member of a GitHub team along with the role
+// they hold on that team ("member" or "maintainer").
+type TeamMember struct {
+	Login string
+	Role  string // "member" or "maintainer"
+}
+
+// ListTeamMembers returns all members of the given org team along with their
+// role on that team.  It paginates through the GitHub API as needed.
+//
+// The "maintainer" role identifies team admins (typically org owners) who
+// must be protected from automated removal during audits.
+func (c *Client) ListTeamMembers(ctx context.Context, org, teamSlug string) ([]TeamMember, error) {
+	var members []TeamMember
+
+	// We must list members per role because the GitHub API returns logins only
+	// (without role) when role="all". Querying each role separately lets us
+	// reliably distinguish maintainers from regular members.
+	for _, role := range []string{"member", "maintainer"} {
+		opts := &github.TeamListTeamMembersOptions{
+			Role:        role,
+			ListOptions: github.ListOptions{PerPage: 100},
+		}
+		for {
+			users, resp, err := c.gh.Teams.ListTeamMembersBySlug(ctx, org, teamSlug, opts)
+			if err != nil {
+				return nil, fmt.Errorf("listing %s team members for %s/%s: %w", role, org, teamSlug, unwrapGitHubError(err))
+			}
+			for _, u := range users {
+				members = append(members, TeamMember{Login: u.GetLogin(), Role: role})
+			}
+			if resp.NextPage == 0 {
+				break
+			}
+			opts.Page = resp.NextPage
+		}
+	}
+
+	return members, nil
+}
+
+// RemoveFromTeam removes username from the given org team. It does not remove
+// the user from the organisation itself — only their team membership.
+func (c *Client) RemoveFromTeam(ctx context.Context, org, teamSlug, username string) error {
+	resp, err := c.gh.Teams.RemoveTeamMembershipBySlug(ctx, org, teamSlug, username)
+	if err != nil {
+		if resp != nil {
+			switch resp.StatusCode {
+			case http.StatusForbidden:
+				return fmt.Errorf("permission denied removing %q: ensure your token has 'admin:org' scope (%w)", username, unwrapGitHubError(err))
+			case http.StatusNotFound:
+				// Already not a member — treat as success.
+				return nil
+			}
+		}
+		return fmt.Errorf("removing %q from team %s/%s: %w", username, org, teamSlug, unwrapGitHubError(err))
+	}
+	return nil
+}
+
 // AddToTeam adds username to the given org team as a regular member.
 // If the user is not yet a GitHub organisation member they will receive an
 // invitation email; if they are already a member they will be added directly.
