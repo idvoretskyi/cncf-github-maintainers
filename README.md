@@ -85,6 +85,7 @@ cncf-maintainers validate <user1> <user2>
 cncf-maintainers validate --file usernames.txt
 
 # Add a confirmed maintainer to the team
+# Users with a pending invitation are detected and skipped automatically
 cncf-maintainers add <username>
 
 # Preview without making changes
