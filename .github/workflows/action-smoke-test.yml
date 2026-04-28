@@ -1,0 +1,56 @@
+name: Action smoke test
+
+# Smoke-test the composite GitHub Action on every PR or push that touches
+# the action definition or its helper script. Uses the local checkout so no
+# published release is required; the 'version: latest' input is used, which
+# downloads the most recent published release binary.
+#
+# The test runs 'cncf-maintainers validate thockin' — Tim Hockin is a
+# long-standing Kubernetes maintainer listed in the CNCF CSV. If the test
+# ever starts failing because the username was removed from the CSV, update
+# this file to reference another stable maintainer login.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'action.yml'
+      - '.github/action/**'
+      - '.github/workflows/action-smoke-test.yml'
+  pull_request:
+    paths:
+      - 'action.yml'
+      - '.github/action/**'
+      - '.github/workflows/action-smoke-test.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-ubuntu:
+    name: Smoke test (ubuntu-latest)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run validate via action (local checkout)
+        uses: ./
+        with:
+          command: validate
+          args: thockin
+          version: latest
+
+  smoke-macos:
+    name: Smoke test (macos-latest)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run validate via action (local checkout)
+        uses: ./
+        with:
+          command: validate
+          args: thockin
+          version: latest
