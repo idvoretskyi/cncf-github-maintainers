@@ -22,19 +22,40 @@ func NewClient(token string) *Client {
 	return &Client{gh: github.NewClient(tc)}
 }
 
-// IsTeamMember reports whether username is already an active member of the
-// given org team.  It returns false (not an error) when the user is simply
-// not a member yet.
-func (c *Client) IsTeamMember(ctx context.Context, org, teamSlug, username string) (bool, error) {
+// MembershipState describes a user's current membership state on a GitHub team.
+type MembershipState int
+
+const (
+	// MembershipNone means the user has no membership record on the team
+	// (they have never been invited or have been removed).
+	MembershipNone MembershipState = iota
+
+	// MembershipPending means the user has been invited to the team but has
+	// not yet accepted the invitation.
+	MembershipPending
+
+	// MembershipActive means the user is a confirmed, active team member.
+	MembershipActive
+)
+
+// GetTeamMembership returns the MembershipState for username on the given org
+// team.  A 404 response is treated as MembershipNone (not an error).
+func (c *Client) GetTeamMembership(ctx context.Context, org, teamSlug, username string) (MembershipState, error) {
 	membership, resp, err := c.gh.Teams.GetTeamMembershipBySlug(ctx, org, teamSlug, username)
 	if err != nil {
 		if resp != nil && resp.StatusCode == http.StatusNotFound {
-			return false, nil
+			return MembershipNone, nil
 		}
-		return false, fmt.Errorf("checking team membership for %q: %w", username, unwrapGitHubError(err))
+		return MembershipNone, fmt.Errorf("checking team membership for %q: %w", username, unwrapGitHubError(err))
 	}
-	// A membership can be "pending" (invited but not accepted) or "active".
-	return membership.GetState() == "active", nil
+	switch membership.GetState() {
+	case "active":
+		return MembershipActive, nil
+	case "pending":
+		return MembershipPending, nil
+	default:
+		return MembershipNone, nil
+	}
 }
 
 // TeamMember represents a single member of a GitHub team along with the role

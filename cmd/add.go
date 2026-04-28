@@ -23,6 +23,7 @@ type addResult struct {
 	username   string
 	found      bool  // present in the CNCF CSV
 	alreadyMem bool  // already an active team member
+	pending    bool  // already has a pending invitation
 	added      bool  // newly added in this run
 	dryRun     bool  // would have been added (--dry-run)
 	skipped    bool  // user declined the confirmation prompt
@@ -176,15 +177,20 @@ func processUsername(ctx context.Context, cmd *cobra.Command, client *gh.Client,
 		}
 	}
 
-	isMember, err := client.IsTeamMember(ctx, config.OrgName, config.TeamSlug, username)
+	state, err := client.GetTeamMembership(ctx, config.OrgName, config.TeamSlug, username)
 	if err != nil {
 		res.err = err
 		fmt.Fprintf(cmd.OutOrStdout(), "    [!] Error checking membership: %v\n", err)
 		return res, nil
 	}
-	if isMember {
+	switch state {
+	case gh.MembershipActive:
 		fmt.Fprintf(cmd.OutOrStdout(), "[~] %s is already an active member of %s/%s\n", username, config.OrgName, config.TeamSlug)
 		res.alreadyMem = true
+		return res, nil
+	case gh.MembershipPending:
+		fmt.Fprintf(cmd.OutOrStdout(), "[~] %s already has a pending invitation to %s/%s — skipping\n", username, config.OrgName, config.TeamSlug)
+		res.pending = true
 		return res, nil
 	}
 
@@ -216,7 +222,7 @@ func promptConfirm(cmd *cobra.Command, prompt string) (bool, error) {
 }
 
 func printAddSummary(cmd *cobra.Command, results []addResult) {
-	var notFound, dryRun, alreadyMem, added, skipped, failed int
+	var notFound, dryRun, alreadyMem, pending, added, skipped, failed int
 	for _, r := range results {
 		switch {
 		case r.err != nil:
@@ -229,6 +235,8 @@ func printAddSummary(cmd *cobra.Command, results []addResult) {
 			skipped++
 		case r.alreadyMem:
 			alreadyMem++
+		case r.pending:
+			pending++
 		case r.added:
 			added++
 		}
@@ -236,21 +244,24 @@ func printAddSummary(cmd *cobra.Command, results []addResult) {
 
 	fmt.Fprintf(cmd.OutOrStdout(), "\nSummary (%d user(s) processed):\n", len(results))
 	if added > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "  [✓] Added:            %d\n", added)
+		fmt.Fprintf(cmd.OutOrStdout(), "  [✓] Added:                  %d\n", added)
 	}
 	if dryRun > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "  [!] Would add (dry):  %d\n", dryRun)
+		fmt.Fprintf(cmd.OutOrStdout(), "  [!] Would add (dry):        %d\n", dryRun)
 	}
 	if alreadyMem > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "  [~] Already members:  %d\n", alreadyMem)
+		fmt.Fprintf(cmd.OutOrStdout(), "  [~] Already members:        %d\n", alreadyMem)
+	}
+	if pending > 0 {
+		fmt.Fprintf(cmd.OutOrStdout(), "  [~] Pending invitations:    %d\n", pending)
 	}
 	if skipped > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "  [-] Skipped:          %d\n", skipped)
+		fmt.Fprintf(cmd.OutOrStdout(), "  [-] Skipped:                %d\n", skipped)
 	}
 	if notFound > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "  [✗] Not in CSV:       %d\n", notFound)
+		fmt.Fprintf(cmd.OutOrStdout(), "  [✗] Not in CSV:             %d\n", notFound)
 	}
 	if failed > 0 {
-		fmt.Fprintf(cmd.OutOrStdout(), "  [!] Errors:           %d\n", failed)
+		fmt.Fprintf(cmd.OutOrStdout(), "  [!] Errors:                 %d\n", failed)
 	}
 }
