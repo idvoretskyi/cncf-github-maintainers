@@ -1,0 +1,68 @@
+name: 'CNCF Maintainers'
+description: >
+  Validate GitHub usernames against the CNCF project-maintainers.csv,
+  add confirmed maintainers to the cncf-maintainers GitHub team, or
+  audit the team membership for drift against the CSV.
+author: 'Ihor Dvoretskyi'
+
+branding:
+  icon: 'users'
+  color: 'blue'
+
+inputs:
+  command:
+    description: >
+      Subcommand to run: 'audit', 'validate', or 'add'.
+    required: true
+    default: 'audit'
+
+  args:
+    description: >
+      Additional CLI arguments passed verbatim to the subcommand
+      (e.g. "--apply --yes" for audit, or "username1 username2" for validate/add).
+    required: false
+    default: ''
+
+  version:
+    description: >
+      Release tag of cncf-maintainers to install (e.g. "v0.2.0").
+      Defaults to "latest" which resolves to the newest release at run time.
+    required: false
+    default: 'latest'
+
+  github-token:
+    description: >
+      GitHub token passed as GITHUB_TOKEN to the CLI.
+      Required for 'add' and 'audit --apply' (needs admin:org scope).
+      Read-only team access is sufficient for 'audit' (preview mode).
+      Leave empty for 'validate' (no token needed).
+    required: false
+    default: ''
+
+  fail-on-drift:
+    description: >
+      Applies to 'audit' only. When set to 'false' the step succeeds even
+      if drift is detected (exit code 1), allowing the workflow to read the
+      'exit-code' output and decide how to proceed. Any other non-zero exit
+      code (e.g. API error) always fails the step regardless of this flag.
+    required: false
+    default: 'true'
+
+outputs:
+  exit-code:
+    description: 'Exit code returned by the cncf-maintainers CLI.'
+    value: ${{ steps.run.outputs.exit-code }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run cncf-maintainers
+      id: run
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_VERSION: ${{ inputs.version }}
+        INPUT_FAIL_ON_DRIFT: ${{ inputs.fail-on-drift }}
+      run: ${{ github.action_path }}/.github/action/run.sh

@@ -122,6 +122,105 @@ Exit codes:
 | 0 | Team membership matches the CSV (or all `--apply` removals succeeded) |
 | 1 | Discrepancies detected (read-only mode) or one or more removals failed |
 
+## Using as a GitHub Action
+
+The tool is also available as a reusable composite GitHub Action. Reference it
+in any workflow as `idvoretskyi/cncf-github-maintainers@v0` (floating major tag)
+or pin to a specific release such as `@v0.2.0`.
+
+### Inputs
+
+| Input | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `command` | yes | `audit` | Subcommand: `audit`, `validate`, or `add` |
+| `args` | no | `''` | Extra CLI arguments (space-separated) |
+| `version` | no | `latest` | Release tag to install (e.g. `v0.2.0`) |
+| `github-token` | no | `''` | Token with `admin:org` scope for `add` / `audit --apply`; read access for `audit` preview; not needed for `validate` |
+| `fail-on-drift` | no | `true` | For `audit`: when `false`, step succeeds on drift so the workflow can read `exit-code` and decide |
+
+### Outputs
+
+| Output | Description |
+|--------|-------------|
+| `exit-code` | Exit code returned by the CLI (`0` = success / in-sync, `1` = drift or not found) |
+
+### Supported runners
+
+| OS | amd64 | arm64 |
+|----|-------|-------|
+| `ubuntu-*` | ✓ | ✓ |
+| `macos-*` | ✓ | ✓ |
+| `windows-*` | ✗ | ✗ |
+
+### Examples
+
+**Scheduled audit (read-only, fails workflow on drift):**
+
+```yaml
+on:
+  schedule:
+    - cron: '0 12 * * 1'  # Mondays at 12:00 UTC
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: idvoretskyi/cncf-github-maintainers@v0
+        with:
+          command: audit
+          github-token: ${{ secrets.CNCF_AUDIT_TOKEN }}  # read access to the team
+```
+
+**On-demand audit with automatic removals:**
+
+```yaml
+on: workflow_dispatch
+
+jobs:
+  audit-apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: idvoretskyi/cncf-github-maintainers@v0
+        with:
+          command: audit
+          args: --apply --yes
+          github-token: ${{ secrets.ORG_ADMIN_TOKEN }}   # admin:org scope
+```
+
+**Validate a GitHub username inside another workflow:**
+
+```yaml
+- uses: idvoretskyi/cncf-github-maintainers@v0
+  with:
+    command: validate
+    args: ${{ github.event.pull_request.user.login }}
+```
+
+**Audit without failing the step (read exit-code yourself):**
+
+```yaml
+- id: audit
+  uses: idvoretskyi/cncf-github-maintainers@v0
+  with:
+    command: audit
+    fail-on-drift: 'false'
+    github-token: ${{ secrets.CNCF_AUDIT_TOKEN }}
+
+- name: Report drift
+  if: steps.audit.outputs.exit-code == '1'
+  run: echo "Drift detected — review the audit output above."
+```
+
+### Security
+
+- The action downloads a pre-built binary from the GitHub Releases page and
+  **verifies its SHA-256 checksum** against `checksums.txt` before executing.
+- The `github-token` is passed via an environment variable and never appears
+  as a CLI argument or in process listings.
+- For sensitive workflows, consider pinning to an immutable commit SHA instead
+  of a floating tag (e.g. `uses: idvoretskyi/cncf-github-maintainers@<sha>`).
+
 ## License
 
 [Apache License 2.0](LICENSE)
