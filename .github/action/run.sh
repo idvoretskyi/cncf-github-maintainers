@@ -82,12 +82,9 @@ curl -sSfL "${BASE_URL}/checksums.txt"    -o "${TMP}/checksums.txt"
 
 log "Verifying checksum..."
 cd "$TMP"
-# macOS ships a BSD sha256sum that lacks --status; use shasum -a 256 instead.
-# Linux runners have GNU sha256sum which supports --status.
-if [ "$OS" = "darwin" ]; then
-  grep "${TARBALL}" checksums.txt | shasum -a 256 -c --status \
-    || die "Checksum verification failed for ${TARBALL}."
-elif command -v sha256sum &>/dev/null; then
+# On Linux use GNU sha256sum (supports --status).
+# On macOS the BSD sha256sum lacks --status, so use shasum -a 256 instead.
+if [ "$OS" = "linux" ] && command -v sha256sum &>/dev/null; then
   grep "${TARBALL}" checksums.txt | sha256sum -c --status \
     || die "Checksum verification failed for ${TARBALL}."
 elif command -v shasum &>/dev/null; then
