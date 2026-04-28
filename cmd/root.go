@@ -13,8 +13,9 @@ var rootCmd = &cobra.Command{
 	Use:   "cncf-maintainers",
 	Short: "Validate and manage CNCF project maintainers",
 	Long: `cncf-maintainers validates GitHub usernames against the CNCF
-project-maintainers spreadsheet and optionally adds confirmed
-maintainers to the cncf-maintainers GitHub organisation team.
+project-maintainers spreadsheet, optionally adds confirmed
+maintainers to the cncf-maintainers GitHub organisation team, and
+audits the team membership for drift against the CSV.
 
 Sources:
   CSV  – https://github.com/cncf/foundation/blob/main/project-maintainers.csv
@@ -22,7 +23,8 @@ Sources:
 
 Authentication:
   Set the GITHUB_TOKEN environment variable to a Personal Access Token
-  with the 'admin:org' scope before running the 'add' command.`,
+  with the 'admin:org' scope before running the 'add' or 'audit --apply'
+  commands.`,
 }
 
 // SetVersion injects build-time version information into the root command so
