@@ -41,11 +41,30 @@ VERSION="${INPUT_VERSION:-latest}"
 
 if [ "$VERSION" = "latest" ]; then
   log "Resolving latest release tag..."
-  VERSION="$(curl -sSfL \
-    -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/${REPO}/releases/latest" \
-    | jq -r '.tag_name')"
-  [ -n "$VERSION" ] || die "Could not resolve latest release tag."
+  # Build auth header array — authenticating raises the rate limit from
+  # 60 to 5000 req/hour, which prevents 403s on shared macOS/Linux runners.
+  AUTH_HEADER=()
+  if [ -n "${GITHUB_TOKEN:-}" ]; then
+    AUTH_HEADER=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
+  fi
+  for attempt in 1 2 3; do
+    RESPONSE="$(curl -sSL \
+      -H "Accept: application/vnd.github+json" \
+      "${AUTH_HEADER[@]}" \
+      "https://api.github.com/repos/${REPO}/releases/latest" 2>&1)" || true
+    VERSION="$(echo "$RESPONSE" | jq -r '.tag_name // empty' 2>/dev/null || true)"
+    if [ -n "$VERSION" ] && [ "$VERSION" != "null" ]; then
+      break
+    fi
+    if [ "$attempt" -lt 3 ]; then
+      log "Attempt ${attempt} to resolve latest tag failed; retrying in $((attempt * 10))s..."
+      log "API response: ${RESPONSE}"
+      sleep $((attempt * 10))
+    fi
+    VERSION=""
+  done
+  [ -n "$VERSION" ] && [ "$VERSION" != "null" ] \
+    || die "Could not resolve latest release tag after 3 attempts. GitHub API rate limit? Try setting the github-token input."
 fi
 
 log "Installing cncf-maintainers ${VERSION}"
@@ -63,7 +82,9 @@ curl -sSfL "${BASE_URL}/checksums.txt"    -o "${TMP}/checksums.txt"
 
 log "Verifying checksum..."
 cd "$TMP"
-if command -v sha256sum &>/dev/null; then
+# On Linux use GNU sha256sum (supports --status).
+# On macOS the BSD sha256sum lacks --status, so use shasum -a 256 instead.
+if [ "$OS" = "linux" ] && command -v sha256sum &>/dev/null; then
   grep "${TARBALL}" checksums.txt | sha256sum -c --status \
     || die "Checksum verification failed for ${TARBALL}."
 elif command -v shasum &>/dev/null; then
